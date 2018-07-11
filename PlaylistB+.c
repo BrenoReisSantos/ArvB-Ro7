@@ -227,10 +227,12 @@ ABM *divisao(ABM *abm, int i, ABM *abm2, int t)
     return abm;
 }
 
-int compara(Alb* album, CH* chave){
-    int resultado = strcmp(album->artista,chave->artista);
-    if(resultado!=0) return resultado;
-    return strcmp(album->ano,chave->ano);
+int compara_alb_chv(Alb *album, CH *chave)
+{
+    int resultado = strcmp(album->artista, chave->artista);
+    if (resultado != 0)
+        return resultado;
+    return strcmp(album->ano, chave->ano);
 }
 
 //Função que busca um dado elemento e retorna a incidência dele.
@@ -240,18 +242,18 @@ ABM *busca(ABM *a, int t, Alb *album)
         return a;
     int i = 0;
 
-    while ((i < a->numero_de_chaves) && (strcmp(concatena_album(album), concatena_chave(a->chaves[i])) > 0))
+    while ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) > 0))
     {
         i++;
     }
     if (a->folha)
     {
-        if ((i < a->numero_de_chaves) && (strcmp(concatena_album(album), concatena_chave(a->chaves[i])) == 0))
+        if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
             return a;
         else
             return busca(a->filho[i], t, album);
     }
-    if ((i < a->numero_de_chaves) && (strcmp(concatena_album(album), concatena_chave(a->chaves[i])) == 0))
+    if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
         return a;
     return busca(a->filho[i], t, album);
 }
@@ -272,7 +274,7 @@ ABM *insere_nao_completo(ABM *abm, Alb *album, int t)
     if (abm->folha)
     {
 
-        while ((i >= 0) && ((strcmp(concatena_album(album), concatena_chave(abm->chaves[i]))) < 0))
+        while ((i >= 0) && (compara_alb_chv(album, abm->chaves[i]) < 0))
         {
             abm->chaves[i + 1] = abm->chaves[i];
             abm->album[i + 1] = abm->album[i];
@@ -284,7 +286,7 @@ ABM *insere_nao_completo(ABM *abm, Alb *album, int t)
         abm->numero_de_chaves++;
         return abm;
     }
-    while ((i >= 0) && ((strcmp(concatena_album(album), concatena_chave(abm->chaves[i])) < 0)))
+    while ((i >= 0) && (compara_alb_chv(album, abm->chaves[i]) < 0))
     {
         i--;
     }
@@ -292,7 +294,7 @@ ABM *insere_nao_completo(ABM *abm, Alb *album, int t)
     if (abm->filho[i]->numero_de_chaves == ((2 * t) - 1))
     {
         abm = divisao(abm, (i + 1), abm->filho[i], t);
-        if (strcmp(concatena_album(album), concatena_chave(abm->chaves[i])) > 0)
+        if (compara_alb_chv(album, abm->chaves[i]) > 0)
             i++;
     }
     abm->filho[i] = insere_nao_completo(abm->filho[i], album, t);
@@ -338,18 +340,18 @@ int pertence(ABM *a, Alb *album)
         return 0;
     int i = 0;
 
-    while ((i < a->numero_de_chaves) && (strcmp(concatena_album(album), concatena_chave(a->chaves[i])) > 0))
+    while ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) > 0))
     {
         i++;
     }
     if (a->folha)
     {
-        if ((i < a->numero_de_chaves) && (strcmp(concatena_album(album), concatena_chave(a->chaves[i])) == 0))
+        if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
             return 1;
         else
             return 0;
     }
-    if ((i < a->numero_de_chaves) && (strcmp(concatena_album(album), concatena_chave(a->chaves[i])) == 0))
+    if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
         return pertence(a->filho[i + 1], album);
     return pertence(a->filho[i], album);
 }
@@ -383,7 +385,7 @@ ABM *retira(ABM *a, Alb *album, int t)
     int i = 0, j, igual = 0, BEsq = 0;
     ABM *irmao, *aux, *esq, *dir;
 
-    while ((i < a->numero_de_chaves) && ((strcmp(concatena_album(album), concatena_chave(a->chaves[i]))) > 0))
+    while ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) > 0))
     {
         i++;
     }
@@ -406,7 +408,7 @@ ABM *retira(ABM *a, Alb *album, int t)
         }
         return a;
     }
-    if ((i < a->numero_de_chaves) && (strcmp(concatena_album(album), concatena_chave(a->chaves[i])) == 0))
+    if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
     {
         i++;
         igual = 1;
@@ -572,6 +574,37 @@ ABM *retira(ABM *a, Alb *album, int t)
     return a;
 }
 
+int compara_chvs(CH *chave1, CH *chave2)
+{
+    int resultado = strcmp(chave1->artista, chave2->artista);
+    if (resultado != 0)
+        return resultado;
+    return strcmp(chave1->ano, chave2->ano);
+}
+
+//Procura as informações subordinadas dada uma chave
+Alb *procura_album(ABM *a, CH *chave)
+{
+    if (!a)
+        return NULL;
+    int i = 0;
+
+    while ((i < a->numero_de_chaves) && (compara_chvs(chave, a->chaves[i]) > 0))
+    {
+        i++;
+    }
+    if (a->folha)
+    {
+        if ((i < a->numero_de_chaves) && (compara_chvs(chave, a->chaves[i]) == 0))
+            return a->album[i];
+        else
+            return NULL;
+    }
+    if ((i < a->numero_de_chaves) && (compara_chvs(chave, a->chaves[i]) == 0))
+        return a->album[i];
+    return procura_album(a->filho[i], chave);
+}
+
 //Função que pega a primeira incidência de folha de um dado artista;
 ABM *busca_artista(ABM *a, char *artista)
 {
@@ -605,18 +638,18 @@ int acha_indice_artisca(ABM *a, char *artista)
         return -1;
     int i = 0;
 
-    while ((i < a->numero_de_chaves) && (strcmp(artista, concatena_chave(a->chaves[i])) > 0))
+    while ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) > 0))
     {
         i++;
     }
     if (a->folha)
     {
-        if ((i < a->numero_de_chaves) && (strcmp(artista, concatena_chave(a->chaves[i])) == 0))
+        if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
             return i;
         else
             return -1;
     }
-    if ((i < a->numero_de_chaves) && (strcmp(artista, concatena_chave(a->chaves[i])) == 0))
+    if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
         return acha_indice_artisca(a->filho[i + 1], artista);
     return acha_indice_artisca(a->filho[i], artista);
 }
@@ -638,6 +671,7 @@ int main(void)
     char nome[255];
     int opc = 0;
     char artista[50];
+    char ano[4];
 
     printf("Digite o nome do Arquivo: ");
     scanf("%s", nome);
@@ -645,16 +679,8 @@ int main(void)
     Alb **tudo = arquivo_para_album(nome);
     abm = inicializa_arvBmais(abm);
 
-    /*
-    O insere só funciona até 62.
-    a partir do 63 o programa alerta 
-    sysmalloc assertion error.
-    Eu não faço a mínima idéia do oque
-    possa ser isso.  
-    */
-
     int i = 0;
-    while (i < 62) // (i < tamanho_do_arquivo(nome));
+    while (i < tamanho_do_arquivo(nome)) // (i < tamanho_do_arquivo(nome));
     {
         abm = insere(abm, tudo[i], t);
         i++;
@@ -662,18 +688,48 @@ int main(void)
 
     while (opc != -1)
     {
-        printf("Digite 0 para imprimir, 1 para remover um dado artista e -1 para sair : ");
+        printf("Digite 0 para imprimir, 2 para mostrar informações de uma chave, 3 para alterar algum album, 5 para remover um dado artista e -1 para sair : ");
         scanf("%i", &opc);
         if (opc == 0)
         {
             imprime(abm, 0);
         }
-        else if (opc == 1)
+        else if (opc == 5)
         {
             //Remove Artista não está funcionando corretamente.
             printf("\nDigite o nome do Artista: ");
             scanf("%s", artista);
             remove_artista(abm, artista);
+        }
+        else if (opc == 2)
+        {
+            CH *chv_aux = (CH *)malloc(sizeof(CH));
+            Alb *alb_aux;
+            printf("Digite o nome do Artista: ");
+            scanf("%s", artista);
+            printf("Digite o ano: ");
+            scanf("%s", ano);
+            chv_aux->artista = artista;
+            chv_aux->ano = ano;
+            alb_aux = procura_album(abm, chv_aux);
+            printf("Album: %s \nDuracao: %s\nNumero de Faixas: %s", alb_aux->album, alb_aux->duracao, alb_aux->nfaixas);
+            free(chv_aux);
+            free(alb_aux);
+            //free(cantor);
+            //free(ano);
+        }
+        else if (opc == 3)
+        {
+            CH *chv_aux = (CH *)malloc(sizeof(CH));
+            Alb *alb_aux;
+            printf("Digite o nome do Artista para alterar: ");
+            scanf("%s", artista);
+            printf("Digite o ano para alterar: ");
+            scanf("%s", ano);
+            chv_aux->artista = artista;
+            chv_aux->ano = ano;
+            alb_aux = procura_album(abm, chv_aux);
+            //Colocar as opções de alteração
         }
         else if (opc == -1)
         {
@@ -684,5 +740,6 @@ int main(void)
             printf("Digite uma opção válida\n");
         }
     }
+    free(tudo);
     return 0;
 }
