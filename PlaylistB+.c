@@ -166,6 +166,7 @@ void imprime(ABM *a, int andar)
                 printf("   ");
             char *chave = concatena_chave(a->chaves[i]);
             printf("%s\n", chave);
+            free(chave);
         }
         imprime(a->filho[i], andar + 1);
     }
@@ -224,6 +225,12 @@ ABM *divisao(ABM *abm, int i, ABM *abm2, int t)
         abm3->anterior = abm2;
     }
     return abm;
+}
+
+int compara(Alb* album, CH* chave){
+    int resultado = strcmp(album->artista,chave->artista);
+    if(resultado!=0) return resultado;
+    return strcmp(album->ano,chave->ano);
 }
 
 //Função que busca um dado elemento e retorna a incidência dele.
