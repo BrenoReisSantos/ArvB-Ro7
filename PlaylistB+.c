@@ -177,26 +177,13 @@ ABM *divisao(ABM *abm, int i, ABM *abm2, int t)
 {
     ABM *abm3 = cria_arvBmais(t);
     abm3->folha = abm2->folha;
+    abm3->numero_de_chaves = t - 1 + abm2->folha;
     int j;
-    if (abm3->folha)
+    for (j = 0; j < t - 1 + abm2->folha; j++)
     {
-        abm3->numero_de_chaves = t;
-        abm3->chaves[0] = abm2->chaves[t - 1];
-        abm3->album[0] = abm2->album[t - 1];
-        for (j = 0; j < t - 1; j++)
-        {
-            abm3->chaves[j + 1] = abm2->chaves[j + t];
-            abm3->album[j + 1] = abm2->album[j + t];
-        }
-    }
-    else
-    {
-        abm3->numero_de_chaves = t - 1;
-        for (j = 0; j < t - 1; j++)
-        {
-            abm3->chaves[j] = abm2->chaves[j + t];
-            abm3->album[j] = abm2->album[j + t];
-        }
+        abm3->chaves[j] = abm2->chaves[j + t - abm2->folha];
+        if (abm2->folha)
+            abm3->album[j] = abm2->album[j + t - abm2->folha];
     }
     if (!abm2->folha)
     {
@@ -205,6 +192,12 @@ ABM *divisao(ABM *abm, int i, ABM *abm2, int t)
             abm3->filho[j] = abm2->filho[j + t];
             abm2->filho[j + t] = NULL;
         }
+    }
+    else
+    {
+        abm3->proximo = abm2->proximo;
+        abm2->proximo = abm3;
+        abm3->anterior = abm2;
     }
     abm2->numero_de_chaves = t - 1;
     for (j = abm->numero_de_chaves; j >= i; j--)
@@ -215,15 +208,13 @@ ABM *divisao(ABM *abm, int i, ABM *abm2, int t)
     for (j = abm->numero_de_chaves; j >= i; j--)
     {
         abm->chaves[j] = abm->chaves[j - 1];
-        abm->album[j] = abm->album[j - 1];
+        if (abm->folha)
+            abm->album[j] = abm->album[j - 1];
     }
     abm->chaves[i - 1] = abm2->chaves[t - 1];
+    if (abm2->folha)
+        abm->album[i - 1] = abm2->album[t - 1];
     abm->numero_de_chaves++;
-    if ((abm2->folha) && (abm3->folha))
-    {
-        abm2->proximo = abm3;
-        abm3->anterior = abm2;
-    }
     return abm;
 }
 
@@ -601,32 +592,85 @@ Alb *procura_album(ABM *a, CH *chave)
             return NULL;
     }
     if ((i < a->numero_de_chaves) && (compara_chvs(chave, a->chaves[i]) == 0))
-        return a->album[i];
+        return procura_album(a->filho[i + 1], chave);
     return procura_album(a->filho[i], chave);
 }
 
+void mostra_album(ABM *abm, CH *chv_aux)
+{
+    char artista[50];
+    char ano[4];
+    Alb *alb_aux;
+    alb_aux = procura_album(abm, chv_aux);
+
+    printf("\nMostrando Informacoes: \n");
+    if (alb_aux)
+    {
+        printf("Album: %s\nDuracao: %s\nNumero de Faixas: %s\n", alb_aux->album, alb_aux->duracao, alb_aux->nfaixas);
+    }
+    else
+    {
+        printf("Não encontrado!\n");
+    }
+    printf("\n");
+}
+
+ABM *edita_album(ABM *abm, CH *chv_aux)
+{
+    char artista[50];
+    char ano[4];
+    char *album = (char *)malloc(sizeof(char) * 50);
+    char *nfaixas = (char *)malloc(sizeof(char) * 4);
+    char *duracao = (char *)malloc(sizeof(char) * 3);
+
+    Alb *alb_aux;
+    alb_aux = procura_album(abm, chv_aux);
+    if (alb_aux)
+    {
+        printf("Digite o nome do album novo: \n");
+        scanf(" %[^\n]s", album);
+        if (album != "")
+            alb_aux->album = album;
+        printf("Digite o numero de faixas novo: \n");
+        scanf(" %[^\n]s", nfaixas);
+        if (nfaixas != "")
+            alb_aux->nfaixas = nfaixas;
+        printf("Digite a duracao nova: ");
+        scanf(" %[^\n]s", duracao);
+        if (duracao != "")
+            alb_aux->duracao = duracao;
+        free(album);
+        free(nfaixas);
+        free(duracao);
+        return abm;
+    }
+    printf("Não encontrado!\n");
+    return NULL;
+}
+
 //Função que pega a primeira incidência de folha de um dado artista;
-ABM *busca_artista(ABM *a, char *artista)
+Alb *busca_artista(ABM *a, char *artista)
 {
     if (!a)
-        return a;
+        return NULL;
 
     if (a->folha)
     {
         int i = 0;
         while ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) > 0))
         {
+            printf("%s\n", a->chaves[i]->artista);
             i++;
         }
         if (a->folha)
         {
             if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
-                return a;
+                return a->album[i];
             else
-                return busca_artista(a->filho[i], artista);
+                return NULL;
         }
         if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
-            return a;
+            return busca_artista(a->filho[i + 1], artista);
         return busca_artista(a->filho[i], artista);
     }
 }
@@ -655,13 +699,19 @@ int acha_indice_artisca(ABM *a, char *artista)
 }
 
 //Função que remove um dado Artista da arvore até acabar com todas as suas obras;
-void remove_artista(ABM *abm, char *artista)
+ABM *remove_artista(ABM *abm, char *artista)
 {
-
-    while (busca_artista(abm, artista))
+    printf("Entrei no Busca!");
+    Alb *retirar = busca_artista(abm, artista);
+    if (retirar)
     {
-        printf("Achei!");
-        abm = retira(abm, busca_artista(abm, artista)->album[acha_indice_artisca(abm, artista)], t);
+        printf("Achei!\n");
+        abm = retira(abm, retirar, t);
+        remove_artista(abm, artista);
+    }
+    else
+    {
+        return abm;
     }
 }
 
@@ -672,6 +722,9 @@ int main(void)
     int opc = 0;
     char artista[50];
     char ano[4];
+    char album[50];
+    char nfaixas[2];
+    char duracao[3];
 
     printf("Digite o nome do Arquivo: ");
     scanf("%s", nome);
@@ -680,7 +733,7 @@ int main(void)
     abm = inicializa_arvBmais(abm);
 
     int i = 0;
-    while (i < tamanho_do_arquivo(nome)) // (i < tamanho_do_arquivo(nome));
+    while (i < 4) // (i < tamanho_do_arquivo(nome));
     {
         abm = insere(abm, tudo[i], t);
         i++;
@@ -690,46 +743,77 @@ int main(void)
     {
         printf("Digite 0 para imprimir, 2 para mostrar informações de uma chave, 3 para alterar algum album, 5 para remover um dado artista e -1 para sair : ");
         scanf("%i", &opc);
+        printf("\n");
         if (opc == 0)
         {
             imprime(abm, 0);
         }
+        else if (opc == 1)
+        {
+            CH *chv_aux = (CH *)malloc(sizeof(CH));
+            Alb *alb_aux;
+            printf("Digite o nome do Artista a ser removido: \n");
+            scanf(" %[^\n]s", artista);
+            printf("Digite o ano: \n");
+            scanf(" %[^\n]s", ano);
+            chv_aux->artista = artista;
+            chv_aux->ano = ano;
+            alb_aux = procura_album(abm, chv_aux);
+            retira(abm, alb_aux, t);
+            free(chv_aux);
+        }
         else if (opc == 5)
         {
             //Remove Artista não está funcionando corretamente.
-            printf("\nDigite o nome do Artista: ");
-            scanf("%s", artista);
-            remove_artista(abm, artista);
+            printf("Digite o nome do Artista: \n");
+            scanf(" %[^\n]s", artista);
+            abm = remove_artista(abm, artista);
         }
         else if (opc == 2)
         {
             CH *chv_aux = (CH *)malloc(sizeof(CH));
-            Alb *alb_aux;
-            printf("Digite o nome do Artista: ");
-            scanf("%s", artista);
-            printf("Digite o ano: ");
-            scanf("%s", ano);
+            printf("Digite o nome do Artista: \n");
+            scanf(" %[^\n]s", artista);
+            printf("Digite o ano: \n");
+            scanf(" %[^\n]s", ano);
             chv_aux->artista = artista;
             chv_aux->ano = ano;
-            alb_aux = procura_album(abm, chv_aux);
-            printf("Album: %s \nDuracao: %s\nNumero de Faixas: %s", alb_aux->album, alb_aux->duracao, alb_aux->nfaixas);
+            mostra_album(abm, chv_aux);
             free(chv_aux);
-            free(alb_aux);
-            //free(cantor);
-            //free(ano);
         }
         else if (opc == 3)
         {
             CH *chv_aux = (CH *)malloc(sizeof(CH));
             Alb *alb_aux;
-            printf("Digite o nome do Artista para alterar: ");
-            scanf("%s", artista);
-            printf("Digite o ano para alterar: ");
-            scanf("%s", ano);
+
+            printf("Digite o nome do Artista: \n");
+            scanf(" %[^\n]s", artista);
+            printf("Digite o ano: \n");
+            scanf(" %[^\n]s", ano);
             chv_aux->artista = artista;
             chv_aux->ano = ano;
             alb_aux = procura_album(abm, chv_aux);
-            //Colocar as opções de alteração
+            mostra_album(abm, chv_aux);
+            //abm = edita_album(abm, chv_aux);
+            if (alb_aux)
+            {
+                printf("Digite o nome do album novo: ");
+                scanf(" %[^\n]s", album);
+                if (album != "")
+                    alb_aux->album = album;
+                printf("Digite o numero de faixas novo: ");
+                scanf(" %[^\n]s", nfaixas);
+                if (nfaixas != "")
+                    alb_aux->nfaixas = nfaixas;
+                printf("Digite a duracao nova: ");
+                scanf(" %[^\n]s", duracao);
+                if (duracao != "")
+                    alb_aux->duracao = duracao;
+                //return abm;
+            }
+            printf("Não encontrado!\n");
+            //return NULL;
+            free(chv_aux);
         }
         else if (opc == -1)
         {
@@ -741,5 +825,6 @@ int main(void)
         }
     }
     free(tudo);
+    liberar(abm);
     return 0;
 }
