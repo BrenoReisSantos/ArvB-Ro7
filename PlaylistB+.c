@@ -245,7 +245,8 @@ ABM *busca(ABM *a, int t, Alb *album)
             return busca(a->filho[i], t, album);
     }
     if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
-        return a;
+        return busca(a->filho[i + 1], t, album);
+    ;
     return busca(a->filho[i], t, album);
 }
 
@@ -370,8 +371,14 @@ void liberar(ABM *a)
 //Função que retira um dado elemento(album) da árvore.
 ABM *retira(ABM *a, Alb *album, int t)
 {
-    if (!pertence(a, album))
+    if (!busca(a, t, album))
         return a;
+
+    while (!a->folha && (a->numero_de_chaves == 0))
+    {
+        ABM *aux = a->filho[0];
+        a = aux;
+    }
 
     int i = 0, j, igual = 0, BEsq = 0;
     ABM *irmao, *aux, *esq, *dir;
@@ -487,6 +494,7 @@ ABM *retira(ABM *a, Alb *album, int t)
                 return a;
             } // C3 - A
         }     // Direita
+        printf("CASO 3B!\n");
         if (i - 1 >= 0)
         { //C3 - B
             // Esquerda
@@ -515,7 +523,8 @@ ABM *retira(ABM *a, Alb *album, int t)
             a->numero_de_chaves--;
             if (a->numero_de_chaves == 0)
             {
-                free(a);
+                printf("Entrei não folha!\n");
+                //free(a);
                 return retira(esq, album, t);
             }
             else
@@ -539,14 +548,13 @@ ABM *retira(ABM *a, Alb *album, int t)
             }
             esq->proximo = dir->proximo;
             dir->proximo = NULL;
-            esq->anterior = dir->anterior;
-            dir->anterior = NULL;
             esq->numero_de_chaves = 2 * t - 2;
             free(dir);
             a->numero_de_chaves--;
             if (a->numero_de_chaves == 0)
             {
-                free(a);
+                printf("Entrei folha!\n");
+                //free(a);
                 return retira(esq, album, t);
             }
             else
@@ -652,7 +660,10 @@ ABM *edita_album(ABM *abm, CH *chv_aux)
 Alb *busca_artista(ABM *a, char *artista)
 {
     if (!a)
+    {
+        printf("Arvore Nula!\n");
         return NULL;
+    }
 
     if (a->folha)
     {
@@ -667,7 +678,10 @@ Alb *busca_artista(ABM *a, char *artista)
             if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
                 return a->album[i];
             else
+            {
+                printf("Entrei no else\n");
                 return NULL;
+            }
         }
         if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
             return busca_artista(a->filho[i + 1], artista);
@@ -698,19 +712,20 @@ int acha_indice_artisca(ABM *a, char *artista)
     return acha_indice_artisca(a->filho[i], artista);
 }
 
-//Função que remove um dado Artista da arvore até acabar com todas as suas obras;
+//Função que remove um dado Artista da arvore até acabar com todas as suas obras
 ABM *remove_artista(ABM *abm, char *artista)
 {
-    printf("Entrei no Busca!");
+    printf("Entrei no Busca!\n");
     Alb *retirar = busca_artista(abm, artista);
     if (retirar)
     {
         printf("Achei!\n");
         abm = retira(abm, retirar, t);
-        remove_artista(abm, artista);
+        return remove_artista(abm, artista);
     }
     else
     {
+        printf("Entrei no else do remove_artista\n");
         return abm;
     }
 }
@@ -741,7 +756,7 @@ int main(void)
 
     while (opc != -1)
     {
-        printf("Digite 0 para imprimir, 2 para mostrar informações de uma chave, 3 para alterar algum album, 5 para remover um dado artista e -1 para sair : ");
+        printf("Digite 0 para imprimir, 1 Para retirar alguma informação, 2 para mostrar informações de uma chave, 3 para alterar algum album, 5 para remover um dado artista e -1 para sair : ");
         scanf("%i", &opc);
         printf("\n");
         if (opc == 0)
