@@ -150,15 +150,6 @@ char *concatena_chave(CH *ch)
     return novo;
 }
 
-//Função que junta as strings Artista+Ano.
-char *concatena_album(Alb *alb)
-{
-    char *novo = (char *)malloc(sizeof(char) * (strlen(alb->artista + strlen(alb->ano) + 1)));
-    strcpy(novo, alb->artista);
-    strcat(novo, alb->ano);
-    return novo;
-}
-
 //Função que imprime a arvore.
 void imprime(ABM *a, int andar)
 {
@@ -330,29 +321,6 @@ ABM *insere(ABM *abm, Alb *album, int t)
     return abm;
 }
 
-//Função que retorna 1 ou 0 para pertence e não pertence respectivamente.
-int pertence(ABM *a, Alb *album)
-{
-    if (!a)
-        return 0;
-    int i = 0;
-
-    while ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) > 0))
-    {
-        i++;
-    }
-    if (a->folha)
-    {
-        if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
-            return 1;
-        else
-            return 0;
-    }
-    if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
-        return pertence(a->filho[i + 1], album);
-    return pertence(a->filho[i], album);
-}
-
 //Função para liberar os ponteiros.
 void liberar(ABM *a)
 {
@@ -499,7 +467,6 @@ ABM *retira(ABM *a, Alb *album, int t)
                 return a;
             } // C3 - A
         }     // Direita
-        printf("CASO 3B!\n");
         if (i - 1 >= 0)
         { //C3 - B
             // Esquerda
@@ -628,44 +595,62 @@ void mostra_album(ABM *abm, CH *chv_aux)
     printf("\n");
 }
 
-ABM *edita_album(ABM *abm, CH *chv_aux)
+ABM *busca_no_artista(ABM *a, char *artista)
 {
-    char artista[50];
-    char ano[4];
-    char *album = (char *)malloc(sizeof(char) * 50);
-    char *nfaixas = (char *)malloc(sizeof(char) * 4);
-    char *duracao = (char *)malloc(sizeof(char) * 3);
-
-    Alb *alb_aux;
-    alb_aux = procura_album(abm, chv_aux);
-    if (alb_aux)
+    if (!a)
     {
-        printf("Digite o nome do album novo: \n");
-        scanf(" %[^\n]s", album);
-        if (album != "")
-            alb_aux->album = album;
-        printf("Digite o numero de faixas novo: \n");
-        scanf(" %[^\n]s", nfaixas);
-        if (nfaixas != "")
-            alb_aux->nfaixas = nfaixas;
-        printf("Digite a duracao nova: ");
-        scanf(" %[^\n]s", duracao);
-        if (duracao != "")
-            alb_aux->duracao = duracao;
-        free(album);
-        free(nfaixas);
-        free(duracao);
-        return abm;
+        return NULL;
     }
-    printf("Não encontrado!\n");
-    return NULL;
+    int i = 0;
+    while ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) > 0))
+    {
+        i++;
+    }
+    if (a->folha)
+    {
+        if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
+            return a;
+        else
+        {
+            return NULL;
+        }
+    }
+    if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
+        return busca_no_artista(a->filho[i + 1], artista);
+    return busca_no_artista(a->filho[i], artista);
 }
 
-TA *busca_obras(ABM *abm, char *artista)
+void printa_album(Alb* album){
+    printf("\nAlbum: %sDuracao: %s\nNumero de Faixas: %s\n", album->album, album->duracao, album->nfaixas);
+}
+
+void busca_obras(ABM *abm, char *artista)
 {
-    TA *lista = (TA *)malloc(sizeof(TA));
-    TA *aux = lista;
-    ABM *aux = abm;
+    ABM *aux = busca_no_artista(abm, artista);
+    if(!aux) return;
+    int i = aux->numero_de_chaves - 1;
+    while (i >= 0 && (!strcmp(artista, aux->album[i]->artista) == 0))
+    {
+        i--;
+    }
+    while (i >= 0 && strcmp(artista, aux->album[i]->artista) == 0)
+    {
+        printf("%d\n",i);
+        if (aux->anterior && i == 0)
+        {
+            printf("ENTREI!\n");
+            printa_album(aux->album[i]);
+            aux = aux->anterior;
+            i = aux->numero_de_chaves;
+        }
+        else if (i >= 0)
+        {
+            printa_album(aux->album[i]);
+            i--;
+        }
+    }
+    //mostra_lista(lista);
+    printf("\n");
 }
 
 //Função que pega a primeira incidência de folha de um dado artista;
@@ -678,7 +663,6 @@ Alb *busca_artista(ABM *a, char *artista)
     int i = 0;
     while ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) > 0))
     {
-        printf("%s\n", a->chaves[i]->artista);
         i++;
     }
     if (a->folha)
@@ -695,33 +679,9 @@ Alb *busca_artista(ABM *a, char *artista)
     return busca_artista(a->filho[i], artista);
 }
 
-//Função que identifica a posição no vetor de albuns de um dado artista.
-int acha_indice_artisca(ABM *a, char *artista)
-{
-    if (!a)
-        return -1;
-    int i = 0;
-
-    while ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) > 0))
-    {
-        i++;
-    }
-    if (a->folha)
-    {
-        if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
-            return i;
-        else
-            return -1;
-    }
-    if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
-        return acha_indice_artisca(a->filho[i + 1], artista);
-    return acha_indice_artisca(a->filho[i], artista);
-}
-
 //Função que remove um dado Artista da arvore até acabar com todas as suas obras
 ABM *remove_artista(ABM *abm, char *artista)
 {
-    printf("Entrei no Busca!\n");
     Alb *retirar = busca_artista(abm, artista);
     if (retirar)
     {
@@ -730,7 +690,6 @@ ABM *remove_artista(ABM *abm, char *artista)
     }
     else
     {
-        printf("Entrei no else do remove_artista\n");
         return abm;
     }
 }
@@ -761,12 +720,13 @@ int main(void)
 
     while (opc != -1)
     {
-        printf("Digite 0 para imprimir, 1 Para retirar alguma informação, 2 para mostrar informações de uma chave, 3 para alterar algum album, 5 para remover um dado artista e -1 para sair : ");
+        printf("Digite 0 para imprimir\n1 Para retirar alguma informação.\n2 para mostrar informações de uma chave.\n3 para alterar algum album.\n4 para mostrar obras de um artista.\n5 para remover um dado artista.\n-1 para sair.\nOpcao: ");
         scanf("%i", &opc);
         printf("\n");
         if (opc == 0)
         {
             imprime(abm, 0);
+            printf("\n");
         }
         else if (opc == 1)
         {
@@ -779,12 +739,16 @@ int main(void)
             chv_aux->artista = artista;
             chv_aux->ano = ano;
             alb_aux = procura_album(abm, chv_aux);
-            retira(abm, alb_aux, t);
+            if(alb_aux){
+                retira(abm, alb_aux, t);
+            }
+            else{
+                printf("Não Encontrado!\n");
+            }
             free(chv_aux);
         }
         else if (opc == 5)
         {
-            //Remove Artista não está funcionando corretamente.
             printf("Digite o nome do Artista: \n");
             scanf(" %[^\n]s", artista);
             abm = remove_artista(abm, artista);
@@ -834,6 +798,12 @@ int main(void)
             printf("Não encontrado!\n");
             //return NULL;
             free(chv_aux);
+        }
+        else if (opc == 4)
+        {
+            printf("Digite o nome do Artista: \n");
+            scanf(" %[^\n]s", artista);
+            busca_obras(abm, artista);
         }
         else if (opc == -1)
         {
