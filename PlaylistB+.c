@@ -31,6 +31,12 @@ typedef struct Arvb_mais
     struct Arvb_mais **filho, *anterior, *proximo;
 } ABM;
 
+typedef struct Lista_artista
+{
+    Alb *album;
+    struct Lista_artista *prox;
+} TA;
+
 ABM *inicializa_arvBmais()
 {
     return NULL;
@@ -246,7 +252,6 @@ ABM *busca(ABM *a, int t, Alb *album)
     }
     if ((i < a->numero_de_chaves) && (compara_alb_chv(album, a->chaves[i]) == 0))
         return busca(a->filho[i + 1], t, album);
-    ;
     return busca(a->filho[i], t, album);
 }
 
@@ -656,37 +661,38 @@ ABM *edita_album(ABM *abm, CH *chv_aux)
     return NULL;
 }
 
+TA *busca_obras(ABM *abm, char *artista)
+{
+    TA *lista = (TA *)malloc(sizeof(TA));
+    TA *aux = lista;
+    ABM *aux = abm;
+}
+
 //Função que pega a primeira incidência de folha de um dado artista;
 Alb *busca_artista(ABM *a, char *artista)
 {
     if (!a)
     {
-        printf("Arvore Nula!\n");
         return NULL;
     }
-
+    int i = 0;
+    while ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) > 0))
+    {
+        printf("%s\n", a->chaves[i]->artista);
+        i++;
+    }
     if (a->folha)
     {
-        int i = 0;
-        while ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) > 0))
-        {
-            printf("%s\n", a->chaves[i]->artista);
-            i++;
-        }
-        if (a->folha)
-        {
-            if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
-                return a->album[i];
-            else
-            {
-                printf("Entrei no else\n");
-                return NULL;
-            }
-        }
         if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
-            return busca_artista(a->filho[i + 1], artista);
-        return busca_artista(a->filho[i], artista);
+            return a->album[i];
+        else
+        {
+            return NULL;
+        }
     }
+    if ((i < a->numero_de_chaves) && (strcmp(artista, a->chaves[i]->artista) == 0))
+        return busca_artista(a->filho[i + 1], artista);
+    return busca_artista(a->filho[i], artista);
 }
 
 //Função que identifica a posição no vetor de albuns de um dado artista.
@@ -719,7 +725,6 @@ ABM *remove_artista(ABM *abm, char *artista)
     Alb *retirar = busca_artista(abm, artista);
     if (retirar)
     {
-        printf("Achei!\n");
         abm = retira(abm, retirar, t);
         return remove_artista(abm, artista);
     }
@@ -748,7 +753,7 @@ int main(void)
     abm = inicializa_arvBmais(abm);
 
     int i = 0;
-    while (i < 4) // (i < tamanho_do_arquivo(nome));
+    while (i < tamanho_do_arquivo(nome)) // (i < tamanho_do_arquivo(nome));
     {
         abm = insere(abm, tudo[i], t);
         i++;
